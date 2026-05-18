@@ -68,8 +68,11 @@ public class ScoreboardComputationTests
             MakeVote("Guðjón", 0),  // next (Björn has no vote)
         };
         var voteMap = votes.ToDictionary(v => v.JudgeName);
+        var currentJudge = config.Judges
+            .Select(j => voteMap.GetValueOrDefault(j))
+            .FirstOrDefault(v => v?.RevealStage is 1 or 2);
         var next = config.Judges
-            .SkipWhile(j => voteMap.TryGetValue(j, out var v) && v.RevealStage is 1 or 2)
+            .SkipWhile(j => j != currentJudge!.JudgeName)
             .Skip(1)
             .FirstOrDefault(j => voteMap.TryGetValue(j, out var v) && v.RevealStage == 0);
         Assert.Equal("Guðjón", next);
