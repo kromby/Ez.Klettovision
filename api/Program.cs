@@ -14,16 +14,20 @@ var host = new HostBuilder()
 
         services.AddSingleton(sp =>
         {
-            var conn = Environment.GetEnvironmentVariable("AzureWebJobsStorage")!;
+            var conn = Environment.GetEnvironmentVariable("AzureWebJobsStorage")
+                ?? throw new InvalidOperationException("AzureWebJobsStorage is not set.");
             return new TableServiceClient(conn);
         });
 
         services.AddSingleton<AppConfig>(sp =>
         {
             var path = Path.Combine(AppContext.BaseDirectory, "config.json");
+            if (!File.Exists(path))
+                throw new FileNotFoundException($"config.json not found at: {path}");
             var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<AppConfig>(json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("config.json deserialized to null.");
         });
     })
     .Build();
