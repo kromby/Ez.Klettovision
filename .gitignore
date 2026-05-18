@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+api/local.settings.json
+api/bin/
+api/obj/
+api.tests/bin/
+api.tests/obj/
