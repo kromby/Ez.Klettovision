@@ -4,6 +4,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
@@ -14,6 +15,12 @@ var host = new HostBuilder()
             var conn = Environment.GetEnvironmentVariable("AzureWebJobsStorage")
                 ?? throw new InvalidOperationException("AzureWebJobsStorage is not set.");
             return new TableServiceClient(conn);
+        });
+
+        services.Configure<JsonSerializerOptions>(o =>
+        {
+            o.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            o.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         });
 
         services.AddSingleton<AppConfig>(sp =>
