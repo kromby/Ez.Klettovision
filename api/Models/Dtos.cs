@@ -11,6 +11,7 @@ public class ScoreboardResponse
     public bool RevealStarted { get; set; }
     public List<CountryScore> Countries { get; set; } = [];
     public CurrentJudgeInfo? CurrentJudge { get; set; }
+    public CurrentJudgeInfo? LastRevealedJudge { get; set; }
     public string? NextJudge { get; set; }
 }
 

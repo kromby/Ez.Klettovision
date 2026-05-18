@@ -15,14 +15,22 @@ public static class ScoringService
         var rankings = JsonSerializer.Deserialize<string[]>(vote.Rankings) ?? [];
         var stage = vote.RevealStage;
 
+        // Stage 1: 1–4 pts (positions 9th–6th, indices 5–8)
         if (stage >= 1)
-            for (int i = 2; i <= 8 && i < rankings.Length; i++)
+            for (int i = 5; i <= 8 && i < rankings.Length; i++)
                 yield return new RevealedScore(rankings[i], "", PointsLadder[i]);
 
-        if (stage >= 2 && rankings.Length > 1)
+        // Stage 2: 5–8 pts (positions 5th–3rd, indices 2–4)
+        if (stage >= 2)
+            for (int i = 2; i <= 4 && i < rankings.Length; i++)
+                yield return new RevealedScore(rankings[i], "", PointsLadder[i]);
+
+        // Stage 3: 10 pts (2nd place, index 1)
+        if (stage >= 3 && rankings.Length > 1)
             yield return new RevealedScore(rankings[1], "", 10);
 
-        if (stage >= 3 && rankings.Length > 0)
+        // Stage 4: 12 pts (1st place, index 0)
+        if (stage >= 4 && rankings.Length > 0)
             yield return new RevealedScore(rankings[0], "", 12);
     }
 

@@ -189,8 +189,9 @@ function mergeJudgeData(judges, votes) {
 function statusOf(judge) {
   if (!judge.submitted) return 'not_submitted';
   if (judge.revealStage === 0) return 'ready';
-  if (judge.revealStage === 1) return 'progress_18';
-  if (judge.revealStage === 2) return 'progress_10';
+  if (judge.revealStage === 1) return 'progress_14';
+  if (judge.revealStage === 2) return 'progress_58';
+  if (judge.revealStage === 3) return 'progress_10';
   return 'done';
 }
 
@@ -212,13 +213,22 @@ function StatusBadge({ status }) {
       }}>tilbúið</span>
     );
   }
-  if (status === 'progress_18') {
+  if (status === 'progress_14') {
     return (
       <span style={{
         color: HI.gold, fontFamily: HI.font, fontWeight: 700, fontSize: 11,
         padding: '3px 8px', border: `1px solid ${HI.gold}`,
         borderRadius: 4, letterSpacing: 2, textTransform: 'uppercase',
-      }}>1–8 birt</span>
+      }}>1–4 birt</span>
+    );
+  }
+  if (status === 'progress_58') {
+    return (
+      <span style={{
+        color: HI.gold, fontFamily: HI.font, fontWeight: 700, fontSize: 11,
+        padding: '3px 8px', border: `1px solid ${HI.gold}`,
+        borderRadius: 4, letterSpacing: 2, textTransform: 'uppercase',
+      }}>5–8 birt</span>
     );
   }
   if (status === 'progress_10') {
@@ -227,7 +237,7 @@ function StatusBadge({ status }) {
         color: HI.gold, fontFamily: HI.font, fontWeight: 700, fontSize: 11,
         padding: '3px 8px', border: `1px solid ${HI.gold}`,
         borderRadius: 4, letterSpacing: 2, textTransform: 'uppercase',
-      }}>+ 10 birt</span>
+      }}>10 birt</span>
     );
   }
   return (
@@ -240,7 +250,7 @@ function StatusBadge({ status }) {
 
 function JudgeRow({ judge, position, isActive, onSelect }) {
   const status = statusOf(judge);
-  const clickable = judge.submitted && judge.revealStage < 3 && !isActive;
+  const clickable = judge.submitted && judge.revealStage < 4 && !isActive;
   return (
     <div
       onClick={clickable ? onSelect : undefined}
@@ -269,7 +279,7 @@ function JudgeRow({ judge, position, isActive, onSelect }) {
 function StagePill({ stage }) {
   return (
     <div style={{ display: 'flex', gap: 4 }}>
-      {[0, 1, 2, 3].map(i => (
+      {[0, 1, 2, 3, 4].map(i => (
         <span key={i} style={{
           width: 22, height: 6, borderRadius: 3,
           background: i <= stage ? HI.gold : HI.border2,
@@ -339,11 +349,12 @@ function RevealButton({ label, enabled, done, climax, index, onClick }) {
 }
 
 function ActiveJudgeCard({ judge, onReveal }) {
-  const stage = judge.revealStage; // 0, 1, 2, or 3
+  const stage = judge.revealStage; // 0–3 active; 4 = done
   const buttons = [
-    { label: 'Birta 1–8 stig',  enabled: stage === 0, done: stage > 0, climax: false },
-    { label: 'Birta 10 stig',   enabled: stage === 1, done: stage > 1, climax: false },
-    { label: 'Birta 12 stig',   enabled: stage === 2, done: stage > 2, climax: true  },
+    { label: 'Birta 1–4 stig',  enabled: stage === 0, done: stage > 0, climax: false },
+    { label: 'Birta 5–8 stig',  enabled: stage === 1, done: stage > 1, climax: false },
+    { label: 'Birta 10 stig',   enabled: stage === 2, done: stage > 2, climax: false },
+    { label: 'Birta 12 stig',   enabled: stage === 3, done: stage > 3, climax: true  },
   ];
 
   return (
@@ -393,11 +404,11 @@ function RevealScreen({ config, initialVotes, pin }) {
   const [selectedName, setSelectedName] = useState(null);
 
   const judges = mergeJudgeData(config.judges, votes);
-  const autoJudge = judges.find(j => j.submitted && j.revealStage >= 0 && j.revealStage < 3);
+  const autoJudge = judges.find(j => j.submitted && j.revealStage >= 0 && j.revealStage < 4);
   const activeJudge = selectedName
-    ? judges.find(j => j.name === selectedName && j.submitted && j.revealStage < 3) ?? autoJudge
+    ? judges.find(j => j.name === selectedName && j.submitted && j.revealStage < 4) ?? autoJudge
     : autoJudge;
-  const doneCount = judges.filter(j => j.revealStage === 3).length;
+  const doneCount = judges.filter(j => j.revealStage === 4).length;
   const submittedCount = judges.filter(j => j.submitted).length;
   const totalCount = judges.length;
 
@@ -424,7 +435,7 @@ function RevealScreen({ config, initialVotes, pin }) {
       });
       if (res.ok) {
         const updated = await res.json();
-        if (updated.revealStage >= 3) setSelectedName(null);
+        if (updated.revealStage >= 4) setSelectedName(null);
         await refresh();
       }
     } finally {

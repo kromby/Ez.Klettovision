@@ -60,7 +60,7 @@ public class AdminFunction(TableServiceClient tableService, AppConfig config)
         if (vote is null)
             return req.CreateResponse(HttpStatusCode.NotFound);
 
-        if (vote.RevealStage >= 3)
+        if (vote.RevealStage >= 4)
             return req.CreateResponse(HttpStatusCode.OK); // idempotent — already done
 
         vote.RevealStage++;

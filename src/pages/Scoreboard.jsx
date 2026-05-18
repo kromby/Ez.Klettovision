@@ -583,13 +583,16 @@ function WaitingState({ submittedCount, totalJudges }) {
 
 // ─── State: reveal (+ between judges + all done) ──────────────────────────────
 function RevealState({ data, displayCountries, prevRanks }) {
-  const { currentJudge, nextJudge, submittedCount, totalJudges } = data;
+  const { currentJudge, lastRevealedJudge, nextJudge, submittedCount, totalJudges } = data;
   const allDone = !currentJudge && !nextJudge;
+
+  // Show last fully-revealed judge's panel while waiting for next judge's first reveal
+  const judgeToShow = currentJudge ?? lastRevealedJudge;
 
   // Build code → country map (for flag lookup in judge panel)
   const countryMap = Object.fromEntries(data.countries.map(c => [c.code, c]));
 
-  // Build code → pts awarded by current judge (for +N badges)
+  // Build code → pts awarded by active judge only (for +N badges; cleared between judges)
   const revealedPtsMap = Object.fromEntries(
     (currentJudge?.revealedScores ?? []).map(s => [s.code, s.points])
   );
@@ -649,8 +652,8 @@ function RevealState({ data, displayCountries, prevRanks }) {
 
         {/* RIGHT: judge panel */}
         <div style={{ minHeight: 0, paddingBottom: 'clamp(8px,1vh,16px)' }}>
-          {currentJudge ? (
-            <JudgePanel currentJudge={currentJudge} countryMap={countryMap} />
+          {judgeToShow && !allDone ? (
+            <JudgePanel currentJudge={judgeToShow} countryMap={countryMap} />
           ) : (
             <div style={{
               height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -707,18 +710,15 @@ export default function Scoreboard() {
         if (!res.ok) return;
         const d = await res.json();
 
-        const prev     = prevDataRef.current;
-        const newStage = d.currentJudge?.revealStage;
-        const prevStage = prev?.currentJudge?.revealStage;
+        const prev = prevDataRef.current;
 
-        // currentJudge is null once RevealStage hits 3 (stage 3 is excluded from "current"),
+        // currentJudge is null once RevealStage hits 4 (fully done, excluded from "current"),
         // so detect completion by watching for currentJudge disappearing.
         const judgeJustCompleted = prev?.currentJudge != null && d.currentJudge == null;
 
         const shouldResort =
           !prev ||
           (!prev.revealStarted && d.revealStarted) ||
-          (newStage === 3 && prevStage !== 3) ||
           judgeJustCompleted;
 
         if (shouldResort) {

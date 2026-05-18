@@ -23,47 +23,45 @@ public class ScoreboardFunction(TableServiceClient tableService, AppConfig confi
 
         var voteMap = votes.ToDictionary(v => v.JudgeName);
         var totals  = ScoringService.ComputeTotals(votes, config);
+        var countryMap = config.Countries.ToDictionary(c => c.Code);
 
-        // Current judge: first in config order with RevealStage 1 or 2
+        // Current judge: first in config order with RevealStage 1–3 (actively being revealed)
         var currentVote = config.Judges
             .Select(j => voteMap.GetValueOrDefault(j))
-            .FirstOrDefault(v => v?.RevealStage is 1 or 2);
+            .FirstOrDefault(v => v?.RevealStage is >= 1 and <= 3);
 
-        // Next judge: first in config order with RevealStage 0, appearing after the current judge
+        // Next judge: first submitted with stage 0 after the current judge
         string? nextJudge = null;
         if (currentVote is not null)
         {
-            var afterCurrent = config.Judges
+            nextJudge = config.Judges
                 .SkipWhile(j => j != currentVote.JudgeName)
-                .Skip(1);
-            nextJudge = afterCurrent
+                .Skip(1)
                 .FirstOrDefault(j => voteMap.TryGetValue(j, out var v) && v.RevealStage == 0);
         }
         else
         {
-            // Between judges or all done — next is first with stage 0
             nextJudge = config.Judges
                 .FirstOrDefault(j => voteMap.TryGetValue(j, out var v) && v.RevealStage == 0);
         }
 
-        CurrentJudgeInfo? currentInfo = null;
-        if (currentVote is not null)
-        {
-            var countryMap = config.Countries.ToDictionary(c => c.Code);
-            var revealedScores = ScoringService.GetRevealedScores(currentVote)
-                .Select(s => new RevealedScore(
-                    s.Code,
-                    countryMap.TryGetValue(s.Code, out var c) ? c.Name : s.Code,
-                    s.Points))
-                .ToList();
-
-            currentInfo = new CurrentJudgeInfo
+        CurrentJudgeInfo? BuildJudgeInfo(VoteEntity vote) =>
+            new()
             {
-                Name = currentVote.JudgeName,
-                RevealStage = currentVote.RevealStage,
-                RevealedScores = revealedScores,
+                Name = vote.JudgeName,
+                RevealStage = vote.RevealStage,
+                RevealedScores = ScoringService.GetRevealedScores(vote)
+                    .Select(s => new RevealedScore(
+                        s.Code,
+                        countryMap.TryGetValue(s.Code, out var c) ? c.Name : s.Code,
+                        s.Points))
+                    .ToList(),
             };
-        }
+
+        // Last fully revealed judge (stage 4) — shown in panel between judges
+        var lastRevealedVote = config.Judges
+            .Select(j => voteMap.GetValueOrDefault(j))
+            .LastOrDefault(v => v?.RevealStage >= 4);
 
         var countries = config.Countries
             .Select(c => new CountryScore
@@ -77,12 +75,13 @@ public class ScoreboardFunction(TableServiceClient tableService, AppConfig confi
 
         var response = new ScoreboardResponse
         {
-            TotalJudges    = config.Judges.Count,
-            SubmittedCount = votes.Count,
-            RevealStarted  = votes.Any(v => v.RevealStage > 0),
-            Countries      = countries,
-            CurrentJudge   = currentInfo,
-            NextJudge      = nextJudge,
+            TotalJudges        = config.Judges.Count,
+            SubmittedCount     = votes.Count,
+            RevealStarted      = votes.Any(v => v.RevealStage > 0),
+            Countries          = countries,
+            CurrentJudge       = currentVote is not null ? BuildJudgeInfo(currentVote) : null,
+            LastRevealedJudge  = lastRevealedVote is not null ? BuildJudgeInfo(lastRevealedVote) : null,
+            NextJudge          = nextJudge,
         };
 
         var res = req.CreateResponse(HttpStatusCode.OK);
