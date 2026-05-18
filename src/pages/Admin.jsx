@@ -238,16 +238,20 @@ function StatusBadge({ status }) {
   );
 }
 
-function JudgeRow({ judge, position, isActive }) {
+function JudgeRow({ judge, position, isActive, onSelect }) {
   const status = statusOf(judge);
+  const clickable = judge.submitted && judge.revealStage < 3 && !isActive;
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: '28px 1fr auto',
-      alignItems: 'center', gap: 12, padding: '8px 14px',
-      borderLeft: isActive ? `3px solid ${HI.gold}` : '3px solid transparent',
-      background: isActive ? 'rgba(212,175,55,0.05)' : 'transparent',
-      opacity: status === 'not_submitted' ? 0.45 : 1,
-    }}>
+    <div
+      onClick={clickable ? onSelect : undefined}
+      style={{
+        display: 'grid', gridTemplateColumns: '28px 1fr auto',
+        alignItems: 'center', gap: 12, padding: '8px 14px',
+        borderLeft: isActive ? `3px solid ${HI.gold}` : '3px solid transparent',
+        background: isActive ? 'rgba(212,175,55,0.05)' : 'transparent',
+        opacity: status === 'not_submitted' ? 0.45 : 1,
+        cursor: clickable ? 'pointer' : 'default',
+      }}>
       <span style={{
         fontFamily: HI.font, fontSize: 14,
         color: HI.inkMuted, textAlign: 'center',
@@ -386,11 +390,13 @@ function ActiveJudgeCard({ judge, onReveal }) {
 function RevealScreen({ config, initialVotes, pin }) {
   const [votes, setVotes] = useState(initialVotes);
   const [revealing, setRevealing] = useState(false);
+  const [selectedName, setSelectedName] = useState(null);
 
   const judges = mergeJudgeData(config.judges, votes);
-  const activeJudge = judges.find(
-    j => j.submitted && j.revealStage >= 0 && j.revealStage < 3
-  );
+  const autoJudge = judges.find(j => j.submitted && j.revealStage >= 0 && j.revealStage < 3);
+  const activeJudge = selectedName
+    ? judges.find(j => j.name === selectedName && j.submitted && j.revealStage < 3) ?? autoJudge
+    : autoJudge;
   const doneCount = judges.filter(j => j.revealStage === 3).length;
   const submittedCount = judges.filter(j => j.submitted).length;
   const totalCount = judges.length;
@@ -416,7 +422,11 @@ function RevealScreen({ config, initialVotes, pin }) {
         method: 'POST',
         headers: { 'X-Admin-Pin': pin },
       });
-      if (res.ok) await refresh();
+      if (res.ok) {
+        const updated = await res.json();
+        if (updated.revealStage >= 3) setSelectedName(null);
+        await refresh();
+      }
     } finally {
       setRevealing(false);
     }
@@ -497,6 +507,7 @@ function RevealScreen({ config, initialVotes, pin }) {
             judge={judge}
             position={i + 1}
             isActive={activeJudge?.name === judge.name}
+            onSelect={() => setSelectedName(judge.name)}
           />
         ))}
       </div>
