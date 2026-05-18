@@ -711,11 +711,15 @@ export default function Scoreboard() {
         const newStage = d.currentJudge?.revealStage;
         const prevStage = prev?.currentJudge?.revealStage;
 
-        // Re-sort display order when reveal first starts, or when a judge completes (stage → 3)
+        // currentJudge is null once RevealStage hits 3 (stage 3 is excluded from "current"),
+        // so detect completion by watching for currentJudge disappearing.
+        const judgeJustCompleted = prev?.currentJudge != null && d.currentJudge == null;
+
         const shouldResort =
           !prev ||
           (!prev.revealStarted && d.revealStarted) ||
-          (newStage === 3 && prevStage !== 3);
+          (newStage === 3 && prevStage !== 3) ||
+          judgeJustCompleted;
 
         if (shouldResort) {
           const snapshot = Object.fromEntries(
