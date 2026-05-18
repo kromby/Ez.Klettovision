@@ -1,0 +1,22 @@
+{
+  "year": "2026",
+  "countries": [
+    { "code": "ISL", "name": "Ísland" },
+    { "code": "NOR", "name": "Noregur" },
+    { "code": "SWE", "name": "Svíþjóð" },
+    { "code": "DNK", "name": "Danmörk" },
+    { "code": "FRO", "name": "Færeyjar" },
+    { "code": "DEU", "name": "Þýskaland" },
+    { "code": "FRA", "name": "Frakkland" },
+    { "code": "IRL", "name": "Írland" },
+    { "code": "ENG", "name": "England" },
+    { "code": "SCO", "name": "Skotland" },
+    { "code": "WLS", "name": "Wales" },
+    { "code": "NIR", "name": "Norður-Írland" }
+  ],
+  "judges": [
+    "Anna", "Björn", "Guðjón", "Sigríður", "Kristján",
+    "Helga", "Óskar", "Margrét", "Gunnar", "Steinunn",
+    "Páll", "Ragnheiður", "Árni", "Þóra", "Einar"
+  ]
+}
