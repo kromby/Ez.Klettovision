@@ -57,7 +57,7 @@ function PinScreen({ onUnlock }) {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch('/api/admin/votes', {
+      const res = await fetch('/api/manage/votes', {
         headers: { 'X-Admin-Pin': pin },
       });
       if (res.ok) {
@@ -398,7 +398,7 @@ function RevealScreen({ config, initialVotes, pin }) {
   // Refresh votes from server
   async function refresh() {
     try {
-      const res = await fetch('/api/admin/votes', { headers: { 'X-Admin-Pin': pin } });
+      const res = await fetch('/api/manage/votes', { headers: { 'X-Admin-Pin': pin } });
       if (res.ok) setVotes(await res.json());
     } catch { /* ignore */ }
   }
@@ -412,7 +412,7 @@ function RevealScreen({ config, initialVotes, pin }) {
   async function handleReveal(voteId) {
     setRevealing(true);
     try {
-      const res = await fetch(`/api/admin/votes/${voteId}/reveal`, {
+      const res = await fetch(`/api/manage/votes/${voteId}/reveal`, {
         method: 'POST',
         headers: { 'X-Admin-Pin': pin },
       });
@@ -520,7 +520,7 @@ export default function Admin() {
     if (!stored) { setAutoChecking(false); return; }
 
     Promise.all([
-      fetch('/api/admin/votes', { headers: { 'X-Admin-Pin': stored } }),
+      fetch('/api/manage/votes', { headers: { 'X-Admin-Pin': stored } }),
       fetch('/api/config'),
     ]).then(async ([vRes, cRes]) => {
       if (vRes.ok && cRes.ok) {

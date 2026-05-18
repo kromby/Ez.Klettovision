@@ -20,7 +20,7 @@ public class AdminFunction(TableServiceClient tableService, AppConfig config)
 
     [Function("AdminGetVotes")]
     public async Task<HttpResponseData> GetVotes(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "admin/votes")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "manage/votes")] HttpRequestData req)
     {
         if (!IsAuthorized(req))
             return req.CreateResponse(HttpStatusCode.Unauthorized);
@@ -44,7 +44,7 @@ public class AdminFunction(TableServiceClient tableService, AppConfig config)
 
     [Function("AdminRevealVote")]
     public async Task<HttpResponseData> RevealVote(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "admin/votes/{id}/reveal")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "manage/votes/{id}/reveal")] HttpRequestData req,
         string id)
     {
         if (!IsAuthorized(req))
