@@ -9,6 +9,7 @@ public class ScoreboardResponse
     public int TotalJudges { get; set; }
     public int SubmittedCount { get; set; }
     public bool RevealStarted { get; set; }
+    public int PollIntervalMs { get; set; }
     public List<CountryScore> Countries { get; set; } = [];
     public CurrentJudgeInfo? CurrentJudge { get; set; }
     public CurrentJudgeInfo? LastRevealedJudge { get; set; }
@@ -33,3 +34,6 @@ public record RevealedScore(string Code, string Name, int Points);
 
 // GET /api/admin/votes response item
 public record AdminVoteItem(string Id, string JudgeName, int RevealStage);
+
+// GET/POST /api/manage/settings
+public record AdminSettings(int PollIntervalMs);

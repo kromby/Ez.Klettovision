@@ -1,5 +1,6 @@
 using Azure.Data.Tables;
 using KlettovisionApi.Models;
+using KlettovisionApi.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using System.Net;
@@ -68,6 +69,36 @@ public class AdminFunction(TableServiceClient tableService, AppConfig config)
 
         var res = req.CreateResponse(HttpStatusCode.OK);
         await res.WriteAsJsonAsync(new AdminVoteItem(vote.RowKey, vote.JudgeName, vote.RevealStage));
+        return res;
+    }
+
+    [Function("AdminGetSettings")]
+    public async Task<HttpResponseData> GetSettings(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "manage/settings")] HttpRequestData req)
+    {
+        if (!IsAuthorized(req))
+            return req.CreateResponse(HttpStatusCode.Unauthorized);
+
+        var ms = await SettingsService.GetPollIntervalAsync(tableService);
+        var res = req.CreateResponse(HttpStatusCode.OK);
+        await res.WriteAsJsonAsync(new AdminSettings(ms));
+        return res;
+    }
+
+    [Function("AdminUpdateSettings")]
+    public async Task<HttpResponseData> UpdateSettings(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "manage/settings")] HttpRequestData req)
+    {
+        if (!IsAuthorized(req))
+            return req.CreateResponse(HttpStatusCode.Unauthorized);
+
+        var body = await req.ReadFromJsonAsync<AdminSettings>();
+        if (body is null || body.PollIntervalMs < 1_000 || body.PollIntervalMs > 60_000)
+            return req.CreateResponse(HttpStatusCode.BadRequest);
+
+        await SettingsService.SetPollIntervalAsync(tableService, body.PollIntervalMs);
+        var res = req.CreateResponse(HttpStatusCode.OK);
+        await res.WriteAsJsonAsync(new AdminSettings(body.PollIntervalMs));
         return res;
     }
 }

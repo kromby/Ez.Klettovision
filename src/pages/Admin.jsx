@@ -398,10 +398,20 @@ function ActiveJudgeCard({ judge, onReveal }) {
   );
 }
 
+const INTERVAL_PRESETS = [
+  { label: '1s',  ms: 1_000 },
+  { label: '2s',  ms: 2_000 },
+  { label: '5s',  ms: 5_000 },
+  { label: '10s', ms: 10_000 },
+  { label: '30s', ms: 30_000 },
+];
+
 function RevealScreen({ config, initialVotes, pin }) {
   const [votes, setVotes] = useState(initialVotes);
   const [revealing, setRevealing] = useState(false);
   const [selectedName, setSelectedName] = useState(null);
+  const [pollIntervalMs, setPollIntervalMs] = useState(null); // null = not yet loaded
+  const [savingInterval, setSavingInterval] = useState(false);
 
   const judges = mergeJudgeData(config.judges, votes);
   const autoJudge = judges.find(j => j.submitted && j.revealStage >= 0 && j.revealStage < 4);
@@ -411,6 +421,14 @@ function RevealScreen({ config, initialVotes, pin }) {
   const doneCount = judges.filter(j => j.revealStage === 4).length;
   const submittedCount = judges.filter(j => j.submitted).length;
   const totalCount = judges.length;
+
+  // Fetch settings (poll interval) once on mount
+  useEffect(() => {
+    fetch('/api/manage/settings', { headers: { 'X-Admin-Pin': pin } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPollIntervalMs(d.pollIntervalMs); })
+      .catch(() => {});
+  }, [pin]);
 
   // Refresh votes from server
   async function refresh() {
@@ -425,6 +443,20 @@ function RevealScreen({ config, initialVotes, pin }) {
     const id = setInterval(refresh, 8000);
     return () => clearInterval(id);
   }, [pin]);
+
+  async function handleSetInterval(ms) {
+    setSavingInterval(true);
+    try {
+      const res = await fetch('/api/manage/settings', {
+        method: 'POST',
+        headers: { 'X-Admin-Pin': pin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pollIntervalMs: ms }),
+      });
+      if (res.ok) setPollIntervalMs(ms);
+    } finally {
+      setSavingInterval(false);
+    }
+  }
 
   async function handleReveal(voteId) {
     setRevealing(true);
@@ -467,6 +499,41 @@ function RevealScreen({ config, initialVotes, pin }) {
           <div style={{
             color: HI.inkMuted, fontFamily: HI.body, fontSize: 14,
           }}>{submittedCount}/{totalCount} innsend</div>
+        </div>
+      </div>
+
+      {/* Scoreboard refresh rate */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '6px 4px 10px', flexWrap: 'wrap',
+      }}>
+        <span style={{
+          fontFamily: HI.font, fontWeight: 700, fontSize: 11,
+          letterSpacing: 2.5, textTransform: 'uppercase', color: HI.inkMuted,
+          flexShrink: 0,
+        }}>Uppfærslutíðni töflu</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {INTERVAL_PRESETS.map(({ label, ms }) => {
+            const active = pollIntervalMs === ms;
+            return (
+              <button
+                key={ms}
+                disabled={savingInterval}
+                onClick={() => handleSetInterval(ms)}
+                style={{
+                  appearance: 'none', WebkitAppearance: 'none',
+                  cursor: savingInterval ? 'not-allowed' : 'pointer',
+                  padding: '5px 12px', borderRadius: 6,
+                  fontFamily: HI.font, fontWeight: 700, fontSize: 13,
+                  letterSpacing: 1, transition: 'all 120ms',
+                  background: active ? HI.goldSoft : 'transparent',
+                  border: `1px solid ${active ? HI.gold : HI.border2}`,
+                  color: active ? HI.gold : HI.inkDim,
+                  opacity: savingInterval ? 0.5 : 1,
+                }}
+              >{label}</button>
+            );
+          })}
         </div>
       </div>
 

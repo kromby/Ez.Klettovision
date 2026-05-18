@@ -702,6 +702,10 @@ export default function Scoreboard() {
   const [displayCountries, setDisplay]    = useState([]);
   const [prevRanks, setPrevRanks]         = useState({});
   const prevDataRef                       = useRef(null);
+  const timerRef                          = useRef(null);
+  const pollIntervalRef                   = useRef(10_000);
+  // displayCountries ref so the poll closure always reads the latest value
+  const displayRef                        = useRef([]);
 
   useEffect(() => {
     async function poll() {
@@ -709,6 +713,14 @@ export default function Scoreboard() {
         const res = await fetch('/api/scoreboard');
         if (!res.ok) return;
         const d = await res.json();
+
+        // Re-arm timer if the server-side interval changed
+        const serverInterval = d.pollIntervalMs ?? 10_000;
+        if (serverInterval !== pollIntervalRef.current) {
+          pollIntervalRef.current = serverInterval;
+          clearInterval(timerRef.current);
+          timerRef.current = setInterval(poll, serverInterval);
+        }
 
         const prev = prevDataRef.current;
 
@@ -722,11 +734,13 @@ export default function Scoreboard() {
           judgeJustCompleted;
 
         if (shouldResort) {
+          const current = displayRef.current;
           const snapshot = Object.fromEntries(
-            (displayCountries.length ? displayCountries : d.countries).map((c, i) => [c.code, i + 1])
+            (current.length ? current : d.countries).map((c, i) => [c.code, i + 1])
           );
           setPrevRanks(snapshot);
           setDisplay(d.countries);
+          displayRef.current = d.countries;
         }
 
         prevDataRef.current = d;
@@ -737,8 +751,8 @@ export default function Scoreboard() {
     }
 
     poll();
-    const id = setInterval(poll, 10_000);
-    return () => clearInterval(id);
+    timerRef.current = setInterval(poll, pollIntervalRef.current);
+    return () => clearInterval(timerRef.current);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data) {

@@ -16,6 +16,7 @@ public class ScoreboardFunction(TableServiceClient tableService, AppConfig confi
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "scoreboard")] HttpRequestData req)
     {
         await GetTable().CreateIfNotExistsAsync();
+        var pollIntervalMs = await SettingsService.GetPollIntervalAsync(tableService);
         var votes = GetTable()
             .QueryAsync<VoteEntity>(e => e.PartitionKey == config.Year)
             .ToBlockingEnumerable()
@@ -78,6 +79,7 @@ public class ScoreboardFunction(TableServiceClient tableService, AppConfig confi
             TotalJudges        = config.Judges.Count,
             SubmittedCount     = votes.Count,
             RevealStarted      = votes.Any(v => v.RevealStage > 0),
+            PollIntervalMs     = pollIntervalMs,
             Countries          = countries,
             CurrentJudge       = currentVote is not null ? BuildJudgeInfo(currentVote) : null,
             LastRevealedJudge  = lastRevealedVote is not null ? BuildJudgeInfo(lastRevealedVote) : null,
