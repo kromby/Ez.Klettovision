@@ -33,6 +33,7 @@ Ez.Handball.Backend/
   Ez.Handball.Shared/              ← class library (future Domain layer)
     Entities/
       TournamentEntity.cs
+      ClubEntity.cs
       TeamEntity.cs
       MatchEntity.cs
       PlayerEntity.cs
@@ -67,9 +68,11 @@ Ez.Handball.Backend/
 |---|---|
 | Tournament match list | `GET /api/hsi/tournaments/{tournamentId}/matches` |
 | Match details | `GET /api/hsi/match/{matchId}` |
-| Team player stats | `GET /api/hsi/match/{matchId}/{teamId}/players` |
+| Team player stats | `GET /api/hsi/match/{matchId}/{clubId}/players` |
 
 No authentication required. All responses are JSON.
+
+**Note:** hsi.is uses a single ID per club (the same ID for both men's and women's squads). This is treated as `clubId` in our model. Gender is derived from the tournament context.
 
 ---
 
@@ -93,7 +96,8 @@ Blob trigger: raw/tournaments/*/matches.json
 
 Blob trigger: raw/matches/*/details.json
   → ParseMatchFunction:
-      read blob → upsert Teams table + Matches table
+      read blob → upsert Clubs table + Teams table + Matches table
+      (gender derived from tournament context)
 
 Blob trigger: raw/matches/*/players-*.json
   → ParsePlayersFunction:
@@ -121,11 +125,14 @@ Raw responses are archived before any table writes. The blob archive is the sour
 
 | Table | PartitionKey | RowKey | Key fields |
 |---|---|---|---|
-| `Tournaments` | `season` (e.g. `2025`) | `tournamentId` | name, gender, division |
-| `Teams` | `season` | `teamId` | name, shortName |
+| `Tournaments` | `season` (e.g. `"2025"`) | `tournamentId` | name, gender, division |
+| `Clubs` | `"club"` | `clubId` (hsi.is ID) | name |
+| `Teams` | `"team"` | `"{clubId}-{gender}"` e.g. `"123-karlar"` | clubId, gender, name |
 | `Matches` | `tournamentId` | `matchId` | homeTeamId, awayTeamId, homeScore, awayScore, date, status |
-| `Players` | `teamId` | `playerId` | name, position |
+| `Players` | `teamId` (synthetic) | `playerId` | name, position |
 | `PlayerStats` | `matchId` | `playerId` | goals, yellowCards, redCards, minutesPlayed |
+
+`homeTeamId` and `awayTeamId` in `Matches` reference the synthetic `teamId` (e.g. `"123-karlar"`), not the raw hsi.is clubId.
 
 All writes are upserts — syncing is always idempotent.
 
