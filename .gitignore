@@ -6,3 +6,8 @@ api/bin/
 api/obj/
 api.tests/bin/
 api.tests/obj/
+
+# Azurite local storage emulator state
+__azurite_db_*.json
+__blobstorage__/
+AzuriteConfig

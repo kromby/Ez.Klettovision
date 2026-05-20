@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../lib/api.js';
 import {
   DndContext,
   closestCenter,
@@ -508,8 +509,8 @@ export default function Voting() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/config').then(r => { if (!r.ok) throw r; return r.json(); }),
-      fetch('/api/judges/available').then(r => { if (!r.ok) throw r; return r.json(); }),
+      apiFetch('/api/config').then(r => { if (!r.ok) throw r; return r.json(); }),
+      apiFetch('/api/judges/available').then(r => { if (!r.ok) throw r; return r.json(); }),
     ]).then(([cfg, judges]) => {
       setAvailableJudges(judges);
       setAllCountries(cfg.countries);
@@ -528,7 +529,7 @@ export default function Voting() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch('/api/votes', {
+      const res = await apiFetch('/api/votes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

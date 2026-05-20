@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { HI, HiFiFlag, KlettovisionLogo } from '../lib/brand.jsx';
+import { apiFetch } from '../lib/api.js';
 
 // ── Page background ───────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ function PinScreen({ onUnlock }) {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch('/api/manage/votes', {
+      const res = await apiFetch('/api/manage/votes', {
         headers: { 'X-Admin-Pin': pin },
       });
       if (res.ok) {
@@ -424,7 +425,7 @@ function RevealScreen({ config, initialVotes, pin }) {
 
   // Fetch settings (poll interval) once on mount
   useEffect(() => {
-    fetch('/api/manage/settings', { headers: { 'X-Admin-Pin': pin } })
+    apiFetch('/api/manage/settings', { headers: { 'X-Admin-Pin': pin } })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setPollIntervalMs(d.pollIntervalMs); })
       .catch(() => {});
@@ -433,7 +434,7 @@ function RevealScreen({ config, initialVotes, pin }) {
   // Refresh votes from server
   async function refresh() {
     try {
-      const res = await fetch('/api/manage/votes', { headers: { 'X-Admin-Pin': pin } });
+      const res = await apiFetch('/api/manage/votes', { headers: { 'X-Admin-Pin': pin } });
       if (res.ok) setVotes(await res.json());
     } catch { /* ignore */ }
   }
@@ -447,7 +448,7 @@ function RevealScreen({ config, initialVotes, pin }) {
   async function handleSetInterval(ms) {
     setSavingInterval(true);
     try {
-      const res = await fetch('/api/manage/settings', {
+      const res = await apiFetch('/api/manage/settings', {
         method: 'POST',
         headers: { 'X-Admin-Pin': pin, 'Content-Type': 'application/json' },
         body: JSON.stringify({ pollIntervalMs: ms }),
@@ -461,7 +462,7 @@ function RevealScreen({ config, initialVotes, pin }) {
   async function handleReveal(voteId) {
     setRevealing(true);
     try {
-      const res = await fetch(`/api/manage/votes/${voteId}/reveal`, {
+      const res = await apiFetch(`/api/manage/votes/${voteId}/reveal`, {
         method: 'POST',
         headers: { 'X-Admin-Pin': pin },
       });
@@ -609,8 +610,8 @@ export default function Admin() {
     if (!stored) { setAutoChecking(false); return; }
 
     Promise.all([
-      fetch('/api/manage/votes', { headers: { 'X-Admin-Pin': stored } }),
-      fetch('/api/config'),
+      apiFetch('/api/manage/votes', { headers: { 'X-Admin-Pin': stored } }),
+      apiFetch('/api/config'),
     ]).then(async ([vRes, cRes]) => {
       if (vRes.ok && cRes.ok) {
         setVotes(await vRes.json());
@@ -628,7 +629,7 @@ export default function Admin() {
 
   async function handleUnlock(newPin, initialVotes) {
     try {
-      const res = await fetch('/api/config');
+      const res = await apiFetch('/api/config');
       const cfg = res.ok ? await res.json() : null;
       setConfig(cfg);
     } catch { /* continue without config — will fail gracefully */ }

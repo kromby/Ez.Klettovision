@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { apiFetch } from '../lib/api.js';
 
 // ─── Brand palette ────────────────────────────────────────────────────────────
 const HI = {
@@ -710,7 +711,7 @@ export default function Scoreboard() {
   useEffect(() => {
     async function poll() {
       try {
-        const res = await fetch('/api/scoreboard');
+        const res = await apiFetch('/api/scoreboard');
         if (!res.ok) return;
         const d = await res.json();
 

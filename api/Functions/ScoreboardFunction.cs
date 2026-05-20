@@ -15,6 +15,9 @@ public class ScoreboardFunction(TableServiceClient tableService, AppConfig confi
     public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "scoreboard")] HttpRequestData req)
     {
+        if (!ApiKeyAuth.IsValid(req))
+            return req.CreateResponse(HttpStatusCode.Unauthorized);
+
         await GetTable().CreateIfNotExistsAsync();
         var pollIntervalMs = await SettingsService.GetPollIntervalAsync(tableService);
         var votes = GetTable()

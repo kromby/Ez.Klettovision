@@ -17,6 +17,9 @@ public class VotesFunction(TableServiceClient tableService, AppConfig config)
     public async Task<HttpResponseData> GetAvailable(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "judges/available")] HttpRequestData req)
     {
+        if (!ApiKeyAuth.IsValid(req))
+            return req.CreateResponse(HttpStatusCode.Unauthorized);
+
         await GetTable().CreateIfNotExistsAsync();
         var submittedNames = GetTable()
             .QueryAsync<VoteEntity>(e => e.PartitionKey == config.Year)
@@ -34,6 +37,9 @@ public class VotesFunction(TableServiceClient tableService, AppConfig config)
     public async Task<HttpResponseData> Submit(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "votes")] HttpRequestData req)
     {
+        if (!ApiKeyAuth.IsValid(req))
+            return req.CreateResponse(HttpStatusCode.Unauthorized);
+
         SubmitVoteRequest? body;
         try
         {
@@ -95,6 +101,9 @@ public class VotesFunction(TableServiceClient tableService, AppConfig config)
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "votes/{judgeName}")] HttpRequestData req,
         string judgeName)
     {
+        if (!ApiKeyAuth.IsValid(req))
+            return req.CreateResponse(HttpStatusCode.Unauthorized);
+
         await GetTable().CreateIfNotExistsAsync();
         var vote = GetTable()
             .QueryAsync<VoteEntity>(e => e.PartitionKey == config.Year && e.JudgeName == judgeName)

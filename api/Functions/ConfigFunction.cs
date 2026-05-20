@@ -11,6 +11,9 @@ public class ConfigFunction(AppConfig config)
     public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "config")] HttpRequestData req)
     {
+        if (!ApiKeyAuth.IsValid(req))
+            return req.CreateResponse(HttpStatusCode.Unauthorized);
+
         var res = req.CreateResponse(HttpStatusCode.OK);
         await res.WriteAsJsonAsync(new
         {
