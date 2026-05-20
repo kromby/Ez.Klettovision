@@ -12,8 +12,8 @@ var host = new HostBuilder()
     {
         services.AddSingleton(sp =>
         {
-            var conn = Environment.GetEnvironmentVariable("AzureWebJobsStorage")
-                ?? throw new InvalidOperationException("AzureWebJobsStorage is not set.");
+            var conn = Environment.GetEnvironmentVariable("TABLE_STORAGE_CONNECTION")
+                ?? throw new InvalidOperationException("TABLE_STORAGE_CONNECTION is not set.");
             return new TableServiceClient(conn);
         });
 
